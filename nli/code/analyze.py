@@ -8,10 +8,16 @@ import os
 from collections import Counter, defaultdict
 
 import numpy as np
-import onmt.opts as opts
+try:
+    import onmt.opts as opts
+except ImportError:
+    opts = None
 import pandas as pd
 import torch
-from onmt.utils.parse import ArgumentParser
+try:
+    from onmt.utils.parse import ArgumentParser
+except ImportError:
+    ArgumentParser = None
 from torch.nn.utils.rnn import pack_padded_sequence, pad_sequence
 from torch.utils.data import DataLoader
 from tqdm import tqdm

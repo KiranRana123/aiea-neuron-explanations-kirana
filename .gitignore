@@ -127,3 +127,9 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# Local setup and generated files (Kiran)
+nli/models/
+nli/exp/
+nli/results_*.csv
+.DS_Store
