@@ -1,0 +1,4 @@
+Accuracy: 0.7877 (7753/9842)
+neutral: 0.7332
+entailment: 0.8195
+contradiction: 0.8093
