@@ -1,6 +1,7 @@
 import csv
 import random
 import torch
+import os
 from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
 
 
@@ -22,9 +23,6 @@ for i in range(len(pred_rows)):
 
 dataset = [pair for pair in dataset if pair["gt"] != "UNK"]
 
-print(len(dataset), "dataset")
-print(dataset[0])
-
 random.seed(42)
 test_pairs = random.sample(dataset, 20) 
 print("Testing on ", len(test_pairs), "pairs from the sample")
@@ -40,14 +38,46 @@ rules = """You are given a premise and a hypothesis. Decide how they relate:
 - neutral: the hypothesis might or might not be true.
 Answer with exactly one word: entailment, neutral, or contradiction."""
 
-#testing on single pair
-pair = test_pairs[0]
-messages = [
-    {"role": "system", "content": rules},
-    {"role": "user", "content": f"Premise: {pair['premise']}\nHypothesis: {pair['hypothesis']}\nAnswer:"},
+rules_with_examples = [
+    {"role": "user", "content": "Premise: A man is playing a guitar on stage.\nHypothesis: A person is making music.\nAnswer:"},
+    {"role": "assistant", "content": "entailment"},
+    {"role": "user", "content": "Premise: A man is playing a guitar on stage.\nHypothesis: The man is asleep in bed.\nAnswer:"},
+    {"role": "assistant", "content": "contradiction"},
+    {"role": "user", "content": "Premise: A man is playing a guitar on stage.\nHypothesis: The man is a famous musician.\nAnswer:"},
+    {"role": "assistant", "content": "neutral"},
 ]
-output = pipe(messages, max_new_tokens=5, return_full_text=False, do_sample=False)
-answer = output[0]["generated_text"].strip()
 
-print("Model's output:", answer)
-print("True label:", pair["gt"])
+def get_label(answer):
+    answer = answer.lower()
+    for label in ["entailment", "neutral", "contradiction"]:
+        if label in answer:
+            return label
+    return "invalid"
+
+os.makedirs("results", exist_ok=True)
+results_file = open("results/phi3_accuracy.txt", "w")
+
+for strategy in ["Rules with no example", "Rules with example"]:
+    phi3_preds = []
+    for pair in test_pairs:
+        messages = [{"role": "system", "content": rules}]
+        if strategy == "Rules with example":
+            messages += rules_with_examples
+        messages.append({"role": "user", "content": f"Premise: {pair['premise']}\nHypothesis: {pair['hypothesis']}\nAnswer:"})
+
+        output = pipe(messages, max_new_tokens=5, return_full_text=False, do_sample=False)
+        answer = output[0]["generated_text"].strip()
+        phi3_preds.append(get_label(answer))
+
+    phi3_correct = sum(pred == pair["gt"] for pred, pair in zip(phi3_preds, test_pairs))
+
+    print("Prompting Strategy:", strategy)
+    print("  LLM accuracy:   ", phi3_correct / len(test_pairs))
+    print("  Invalid answers:", phi3_preds.count("invalid"))
+    results_file.write(f"{strategy}: accuracy {phi3_correct / len(test_pairs):.4f} "
+                       f"({phi3_correct}/{len(test_pairs)}), invalid answers {phi3_preds.count('invalid')}\n")
+    
+bowman_correct = sum(pair["bowman_pred"] == pair["gt"] for pair in test_pairs)
+print("Bowman accuracy:", bowman_correct / len(test_pairs))
+results_file.write(f"Bowman accuracy on the same pairs: {bowman_correct / len(test_pairs):.4f}\n")
+results_file.close()
