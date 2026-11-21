@@ -24,7 +24,7 @@ for i in range(len(pred_rows)):
 dataset = [pair for pair in dataset if pair["gt"] != "UNK"]
 
 random.seed(42)
-test_pairs = random.sample(dataset, 20) 
+test_pairs = random.sample(dataset, 1000) 
 print("Testing on ", len(test_pairs), "pairs from the sample")
 
 model_name = "microsoft/Phi-3-mini-128k-instruct"
