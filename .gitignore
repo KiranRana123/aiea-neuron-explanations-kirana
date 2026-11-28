@@ -133,3 +133,7 @@ nli/models/
 nli/exp/
 nli/results_*.csv
 .DS_Store
+task8/Qwen_nli/
+task8/checkpoints/
+task8/phi3_nli/
+task8/qwen_no_lora_test/
