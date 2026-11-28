@@ -1,0 +1,3 @@
+Training pairs: 15000
+Validation pairs: 9842
+Accuracy: 0.8795
